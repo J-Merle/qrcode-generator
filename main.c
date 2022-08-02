@@ -19,10 +19,15 @@ void add_single_marker(int side_size, bool* qrcode, int x, int y) {
 
 }
 
-void add_markers(int side_size, bool *qrcode) {
+void add_markers(int side_size, bool* qrcode) {
 	add_single_marker(side_size, qrcode, 0,0);
-	add_single_marker(side_size, qrcode, 0,14);
-	add_single_marker(side_size, qrcode, 14, 0);
+	add_single_marker(side_size, qrcode, 0, side_size - MARKER_SIZE);
+	add_single_marker(side_size, qrcode, side_size - MARKER_SIZE, 0);
+}
+
+
+// @Incomplete
+void add_indicators(int side_size, bool* qrcode) {
 
 }
 
