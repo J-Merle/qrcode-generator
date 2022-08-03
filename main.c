@@ -99,7 +99,6 @@ void write_data(int data_size, bool* data, int side_size, bool* qrcode, bool* re
 		}
 
 		int pos = x_offset * side_size + y_offset + local_write_offset;
-		printf("Want to write in %d %d (occupied: %d)\n", y_offset + local_write_offset, x_offset, reserved[pos]);
 		if(!reserved[pos]) {
 			qrcode[pos] = data[data_index];
 			data_index++;
