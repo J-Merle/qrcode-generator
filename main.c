@@ -50,6 +50,7 @@ void add_markers(int side_size, bool* qrcode, bool* reserved) {
 	add_single_marker(side_size, qrcode, reserved, 0, side_size - MARKER_SIZE);
 	add_single_marker(side_size, qrcode, reserved, side_size - MARKER_SIZE, 0);
 
+	// Timing lines
 	for(int i = MARKER_SIZE + 1; i < side_size - MARKER_SIZE; i++) {
 		// Real timing line
 		if(i%2 == 0) {
@@ -62,6 +63,8 @@ void add_markers(int side_size, bool* qrcode, bool* reserved) {
 		reserved[i + side_size * (MARKER_SIZE - 1)] = true;
 	} 
 
+	// Dark Module
+	qrcode[(4*1 + 9) *side_size + 8] = true; // @Hardcoded : 4*1 should be 4 * V where V is the QRCode version
 }
 
 
