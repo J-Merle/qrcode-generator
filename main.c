@@ -93,7 +93,7 @@ void add_indicators(int side_size, bool* qrcode, bool* reserved, int ec_level, i
 
 }
 
-void write_data(int data_size, bool* data, int side_size, bool* qrcode, bool* reserved) {
+void persist_data_in_qrcode(int data_size, uint8_t* data, int side_size, bool* qrcode, bool* reserved) {
 	int x_offset = side_size -1;
 	int y_offset = side_size -1;
 	int local_write_offset = 0;
@@ -108,7 +108,7 @@ void write_data(int data_size, bool* data, int side_size, bool* qrcode, bool* re
 
 		int pos = x_offset * side_size + y_offset + local_write_offset;
 		if(!reserved[pos]) {
-			qrcode[pos] = data[data_index];
+			qrcode[pos] = TestBit(data, data_index);
 			data_index++;
 		}
 		local_write_offset = (local_write_offset + 1) *-1;
@@ -166,7 +166,7 @@ int get_alpha(char c) {
 }
 
 // @Incomplete only handle V1 and alpha mode
-void prepare_data(int data_size, const char* input_data, int side_size, bool* qrcode, bool* reserved) {
+void format_and_fill_data_in_qrcode(int data_size, const char* input_data, int side_size, bool* qrcode, bool* reserved) {
 	int text_required_bits = 0;
 	if(data_size % 2 == 0) { 
 		text_required_bits = data_size/2*11;
@@ -206,8 +206,9 @@ void prepare_data(int data_size, const char* input_data, int side_size, bool* qr
 	}
 
 	printf("\n");
-	//write_data(needed_space, created_data, SIZE, qrcode, reserved);
+	persist_data_in_qrcode(needed_space, created_data, SIZE, qrcode, reserved);
 	free(created_data);
+	apply_mask(SIZE, qrcode, reserved);
 
 
 
@@ -229,7 +230,7 @@ int main(void) {
 
 	int* prepared_data_size;
 	uint8_t* prepared_data;
-	prepare_data(11, "HELLO WORLD", SIZE, qrcode, reserved);
+	format_and_fill_data_in_qrcode(11, "HELLO WORLD", SIZE, qrcode, reserved);
 	//apply_mask(SIZE, qrcode, reserved);
 
 	// Display
