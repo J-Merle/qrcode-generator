@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #define SIZE 21
 #define MARKER_SIZE 7
@@ -8,8 +10,15 @@
 // QR Code generator
 // We start with the smallest 21x21 with EC level of L (-> 25 Alphanumeric in total)
 // https://www.thonky.com/qr-code-tutorial/module-placement-matrix
+//
+//
+// Improvements : stop using bool* because sizeof(bool) is 1 so we lose 7bits
+// Cosider using this solution : https://stackoverflow.com/questions/2525310/how-to-define-and-work-with-an-array-of-bits-in-c
+#define SetBit(A,k)     ( A[(k)/8] |= (1 << ((k)%8)) )
+#define TestBit(A,k)    ( A[(k)/8] & (1 << ((k)%8)) )
 
 enum ec_level {EC_LEVEL_L = 3, EC_LEVEL_M = 2, EC_LEVEL_Q = 1, EC_LEVEL_H = 0};
+enum mode {NUMERIC = 1, ALPHA = 2, BYTE = 4, KANJI = 8, ECI = 7};
 
 void add_single_marker(int side_size, bool* qrcode, bool* reserved, int x, int y) {
 	int reserved_size_x = MARKER_SIZE;	
@@ -76,7 +85,6 @@ void add_indicators(int side_size, bool* qrcode, bool* reserved, int ec_level, i
 	int static_value = ec_level << 3 | mask_pattern;
 
 	for(int i = 4; i >= 0; i--) { // @Hardcoded -> 5 bits so 4
-		//printf("%d ", 1<<i);
 		if((static_value & 1<<i) > 0) {
 			qrcode[(MARKER_SIZE + 1) * side_size + (4-i)] = true; // Upper static values
 			qrcode[side_size*(side_size-4+i)-(side_size-MARKER_SIZE - 1)] = true; // Lower static values
@@ -131,32 +139,98 @@ void apply_mask(int side_size, bool* qrcode, bool* reserved) {
 
 }
 
+// @Bug we might want to check for overflows
+void write_single_number(int array_size, uint8_t* array, int number, uint8_t number_of_bits, uint16_t* offset) {
+
+	for(int i = 0; i <= number_of_bits - 1; i++) { // @Hardcoded 3=mode size -1
+		if((1 << (number_of_bits-1-i)) & number) {
+			SetBit(array,  *offset);
+		}
+		(*offset)++;
+	}
+
+}
+
+// @Incomplete
+int get_alpha(char c) {
+	if(c >= 65 && c <= 90) {return c-55;}
+
+	int v = 0;
+	switch(c) {
+		case 32:
+			v = 36;
+			break;
+	}
+	return v;
+			
+}
+
+// @Incomplete only handle V1 and alpha mode
+void prepare_data(int data_size, const char* input_data, int side_size, bool* qrcode, bool* reserved) {
+	int text_required_bits = 0;
+	if(data_size % 2 == 0) { 
+		text_required_bits = data_size/2*11;
+	} else {
+		text_required_bits = (data_size-1)/2*11+6;
+	}
+	int needed_space = 4 + 9 + text_required_bits; // @Hardcoded 4=mode size and 9=character count size if V<=9
+	while(needed_space % 8 != 0) {
+		needed_space++;
+	}
+	uint8_t* created_data =  malloc(needed_space/8);
+	// 
+	uint16_t offset = 0;
+
+	// Add mode size
+	write_single_number(needed_space, created_data, ALPHA, 4, &offset);
+	// Add char count
+	write_single_number(needed_space, created_data, 11, 9, &offset);
+
+	for(int i = 0; i < data_size; i += 2) {
+
+		char current = input_data[i];
+		if (i+1 < data_size) {
+			char next = input_data[i+1];
+			write_single_number(needed_space, created_data, (45* get_alpha(current)) + get_alpha(next), 11, &offset);
+
+		} else {
+			write_single_number(needed_space, created_data, get_alpha(current), 6, &offset);
+		}
+	}
+	for (int i = 0; i < needed_space; i++) {
+		if(TestBit(created_data, i)){
+			printf("1");
+		} else {
+			printf("0");
+		}
+	}
+
+	printf("\n");
+	//write_data(needed_space, created_data, SIZE, qrcode, reserved);
+	free(created_data);
+
+
+
+
+
+}
+
+
 
 
 int main(void) {
 	// Init qrcode array
 	bool qrcode[SIZE*SIZE]  = {}; // The final qrcode
 	bool reserved[SIZE*SIZE]  = {}; // A temporary array showing reserved layer
-	bool data[64] = {
-				true, true, true, false, true, true,true, false,
-				true, true, true, false, true, true,true, false,
-				true, true, true, false, true, true,true, false,
-
-				true, true, true, false, true, true,true, false,
-				true, true, true, false, true, true,true, false,
-				true, true, true, false, true, true,true, false,
-				true, true, true, false, true, true,true, false,
-
-				true, true, true, false, true, true,true, false,
-			};
-
 
 	add_markers(SIZE, qrcode, reserved);
 	add_indicators(SIZE, qrcode, reserved, EC_LEVEL_L, 4);
 
 
-	write_data(64, data, SIZE, qrcode, reserved);
-	apply_mask(SIZE, qrcode, reserved);
+	int* prepared_data_size;
+	uint8_t* prepared_data;
+	prepare_data(11, "HELLO WORLD", SIZE, qrcode, reserved);
+	//apply_mask(SIZE, qrcode, reserved);
 
 	// Display
 	for(int i = 0; i < SIZE ; i++) {
@@ -186,5 +260,5 @@ int main(void) {
 	// 	printf("\n");
 
 	// }
-	// return 0;
+	return 0;
 }
