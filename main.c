@@ -142,7 +142,7 @@ void apply_mask(int side_size, bool* qrcode, bool* reserved) {
 // @Bug we might want to check for overflows
 void write_single_number(int array_size, uint8_t* array, int number, uint8_t number_of_bits, uint16_t* offset) {
 
-	for(int i = 0; i <= number_of_bits - 1; i++) { // @Hardcoded 3=mode size -1
+	for(int i = 0; i <= number_of_bits - 1; i++) { 
 		if((1 << (number_of_bits-1-i)) & number) {
 			SetBit(array,  *offset);
 		}
@@ -151,9 +151,9 @@ void write_single_number(int array_size, uint8_t* array, int number, uint8_t num
 
 }
 
-// @Incomplete
+// @Incomplete add other special aplha char
 int get_alpha(char c) {
-	if(c >= 65 && c <= 90) {return c-55;}
+	if(c >= 65 && c <= 90) {return c - 55;}
 
 	int v = 0;
 	switch(c) {
@@ -167,18 +167,14 @@ int get_alpha(char c) {
 
 // @Incomplete only handle V1 and alpha mode
 void format_and_fill_data_in_qrcode(int data_size, const char* input_data, int side_size, bool* qrcode, bool* reserved) {
-	int text_required_bits = 0;
-	if(data_size % 2 == 0) { 
-		text_required_bits = data_size/2*11;
-	} else {
-		text_required_bits = (data_size-1)/2*11+6;
-	}
+
+	int text_required_bits =data_size % 2 == 0 ? data_size / 2 * 11 : (data_size - 1) / 2 * 11 + 6 ;
 	int needed_space = 4 + 9 + text_required_bits; // @Hardcoded 4=mode size and 9=character count size if V<=9
 	while(needed_space % 8 != 0) {
 		needed_space++;
 	}
-	uint8_t* created_data =  malloc(needed_space/8);
-	// 
+	uint8_t* created_data =  malloc(needed_space / 8);
+
 	uint16_t offset = 0;
 
 	// Add mode size
@@ -186,38 +182,21 @@ void format_and_fill_data_in_qrcode(int data_size, const char* input_data, int s
 	// Add char count
 	write_single_number(needed_space, created_data, 11, 9, &offset);
 
-	for(int i = 0; i < data_size; i += 2) {
-
+	for (int i = 0; i < data_size; i += 2) {
 		char current = input_data[i];
-		if (i+1 < data_size) {
-			char next = input_data[i+1];
+		if (i + 1 < data_size) {
+			char next = input_data[i + 1];
 			write_single_number(needed_space, created_data, (45* get_alpha(current)) + get_alpha(next), 11, &offset);
 
 		} else {
 			write_single_number(needed_space, created_data, get_alpha(current), 6, &offset);
 		}
 	}
-	for (int i = 0; i < needed_space; i++) {
-		if(TestBit(created_data, i)){
-			printf("1");
-		} else {
-			printf("0");
-		}
-	}
 
-	printf("\n");
 	persist_data_in_qrcode(needed_space, created_data, SIZE, qrcode, reserved);
 	free(created_data);
 	apply_mask(SIZE, qrcode, reserved);
-
-
-
-
-
 }
-
-
-
 
 int main(void) {
 	// Init qrcode array
@@ -227,11 +206,7 @@ int main(void) {
 	add_markers(SIZE, qrcode, reserved);
 	add_indicators(SIZE, qrcode, reserved, EC_LEVEL_L, 4);
 
-
-	int* prepared_data_size;
-	uint8_t* prepared_data;
 	format_and_fill_data_in_qrcode(11, "HELLO WORLD", SIZE, qrcode, reserved);
-	//apply_mask(SIZE, qrcode, reserved);
 
 	// Display
 	for(int i = 0; i < SIZE ; i++) {
@@ -244,22 +219,6 @@ int main(void) {
 			}
 		}
 		printf("\n");
-
 	}
-	// Display reserved layer
-	// printf("\n");
-
-	// for(int i = 0; i < SIZE ; i++) {
-	// 	for(int j = 0; j < SIZE ; j++) {
-	// 		if(reserved[i*SIZE+j] == true) {
-	// 			printf("# ");
-	// 		} else {
-
-	// 			printf(". ");
-	// 		}
-	// 	}
-	// 	printf("\n");
-
-	// }
 	return 0;
 }
