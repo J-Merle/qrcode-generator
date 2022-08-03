@@ -85,16 +85,64 @@ void add_indicators(int side_size, bool* qrcode, bool* reserved, int ec_level, i
 
 }
 
+void write_data(int data_size, bool* data, int side_size, bool* qrcode, bool* reserved) {
+	int x_offset = side_size -1;
+	int y_offset = side_size -1;
+	int local_write_offset = 0;
+	int x_direction = -1; // We start by reading bottom to top
+	int data_index = 0;
+	while(data_index < data_size && y_offset >= 0) {
+		// Always skip vertical timing bar as we can not write on it
+		if(y_offset == 6) {
+			y_offset--;
+			continue;
+		}
+
+		int pos = x_offset * side_size + y_offset + local_write_offset;
+		printf("Want to write in %d %d (occupied: %d)\n", y_offset + local_write_offset, x_offset, reserved[pos]);
+		if(!reserved[pos]) {
+			qrcode[pos] = data[data_index];
+			data_index++;
+		}
+		local_write_offset = (local_write_offset + 1) *-1;
+		if(local_write_offset == 0) {
+			x_offset += x_direction;
+			if(x_offset < 0 || x_offset >= side_size) {
+				x_offset -= x_direction; // We went too far, go back
+				y_offset -= 2; 
+				x_direction *= -1; // Reverse the writting direction
+			}
+		}
+
+	}
+
+}
+
 
 
 int main(void) {
 	// Init qrcode array
 	bool qrcode[SIZE*SIZE]  = {}; // The final qrcode
-	bool reserved[SIZE*SIZE]  = {}; // A temporary array showing reserved array
+	bool reserved[SIZE*SIZE]  = {}; // A temporary array showing reserved layer
+	bool data[64] = {
+				true, true, true, false, true, true,true, false,
+				true, true, true, false, true, true,true, false,
+				true, true, true, false, true, true,true, false,
+
+				true, true, true, false, true, true,true, false,
+				true, true, true, false, true, true,true, false,
+				true, true, true, false, true, true,true, false,
+				true, true, true, false, true, true,true, false,
+
+				true, true, true, false, true, true,true, false,
+			};
 
 
 	add_markers(SIZE, qrcode, reserved);
 	add_indicators(SIZE, qrcode, reserved, EC_LEVEL_L, 4);
+
+
+	write_data(64, data, SIZE, qrcode, reserved);
 
 	// Display
 	for(int i = 0; i < SIZE ; i++) {
@@ -109,19 +157,20 @@ int main(void) {
 		printf("\n");
 
 	}
-	printf("\n");
+	// Display reserved layer
+	// printf("\n");
 
-	for(int i = 0; i < SIZE ; i++) {
-		for(int j = 0; j < SIZE ; j++) {
-			if(reserved[i*SIZE+j] == true) {
-				printf("# ");
-			} else {
+	// for(int i = 0; i < SIZE ; i++) {
+	// 	for(int j = 0; j < SIZE ; j++) {
+	// 		if(reserved[i*SIZE+j] == true) {
+	// 			printf("# ");
+	// 		} else {
 
-				printf(". ");
-			}
-		}
-		printf("\n");
+	// 			printf(". ");
+	// 		}
+	// 	}
+	// 	printf("\n");
 
-	}
-	return 0;
+	// }
+	// return 0;
 }
