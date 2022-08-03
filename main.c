@@ -117,6 +117,20 @@ void write_data(int data_size, bool* data, int side_size, bool* qrcode, bool* re
 
 }
 
+// @Incomplete : add all masks
+void apply_mask(int side_size, bool* qrcode, bool* reserved) {
+	for(int i = 0; i < side_size; i++) {
+		for(int j = 0; j < side_size; j++) {
+			int pos = i*side_size + j;
+			if(!reserved[pos] && i%2 == 0) {
+				qrcode[pos] = !qrcode[pos];
+			}
+		}
+
+	}
+
+}
+
 
 
 int main(void) {
@@ -142,6 +156,7 @@ int main(void) {
 
 
 	write_data(64, data, SIZE, qrcode, reserved);
+	apply_mask(SIZE, qrcode, reserved);
 
 	// Display
 	for(int i = 0; i < SIZE ; i++) {
