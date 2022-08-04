@@ -130,7 +130,7 @@ void apply_mask(int side_size, bool* qrcode, bool* reserved) {
 	for(int i = 0; i < side_size; i++) {
 		for(int j = 0; j < side_size; j++) {
 			int pos = i*side_size + j;
-			if(!reserved[pos] && i%2 == 0) {
+			if(!reserved[pos] && (i+j)%3 == 0) {
 				qrcode[pos] = !qrcode[pos];
 			}
 		}
@@ -157,8 +157,33 @@ int get_alpha(char c) {
 
 	int v = 0;
 	switch(c) {
+		// Space 
 		case 32:
 			v = 36;
+			break;
+		case '$':
+			v = 37;
+			break;
+		case '%':
+			v = 38;
+			break;
+		case '*':
+			v = 39;
+			break;
+		case '+':
+			v = 40;
+			break;
+		case '-':
+			v = 41;
+			break;
+		case '.':
+			v = 42;
+			break;
+		case '/':
+			v = 43;
+			break;
+		case ':':
+			v = 44;
 			break;
 	}
 	return v;
@@ -204,9 +229,9 @@ int main(void) {
 	bool reserved[SIZE*SIZE]  = {}; // A temporary array showing reserved layer
 
 	add_markers(SIZE, qrcode, reserved);
-	add_indicators(SIZE, qrcode, reserved, EC_LEVEL_L, 4);
+	add_indicators(SIZE, qrcode, reserved, EC_LEVEL_L, 6);
 
-	format_and_fill_data_in_qrcode(11, "HELLO WORLD", SIZE, qrcode, reserved);
+	format_and_fill_data_in_qrcode(15, "HTTP://GOOGLE.C", SIZE, qrcode, reserved);
 
 	// Display
 	for(int i = 0; i < SIZE ; i++) {
